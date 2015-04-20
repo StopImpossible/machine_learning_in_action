@@ -1,4 +1,5 @@
 from math import log
+import operator
 
 def calc_shannon_ent(data_set):
     num_entries = len(data_set)
@@ -37,6 +38,7 @@ def spit_data_set(data_set, axis, value):
 def choose_best_feature_to_split(data_set):
     num_feature = len(data_set[0]) - 1
     base_entropy = calc_shannon_ent(data_set)
+    print base_entropy
     best_info_gain = 0.0
     best_feature = -1
     for i in range(num_feature):
@@ -53,6 +55,34 @@ def choose_best_feature_to_split(data_set):
             best_feature = i
     return best_feature
 
-my_dat, labels = create_data_set()
-shanno = choose_best_feature_to_split(my_dat)
-print shanno
+def majority_cnt(class_list):
+    class_count = {}
+    for vote in class_list:
+        if vote not in class_count.key():
+            class_count[vote] = 0
+        class_count[vote] += 1
+    sorted_class_count = sorted(class_count.items(),
+                                key = operator.itemgetter(1),
+                                reverse = True)
+    return sorted_class_count
+
+def create_tree(data_set, labels):
+    class_list = [example[-1] for example in data_set]
+    if class_list.count(class_list[0]) == len(class_list):
+        return class_list[0]
+    if len(data_set[0]) == 1:
+        return majority_cnt(class_list)
+    best_feature = choose_best_feature_to_split(data_set)
+    best_feature_label = labels[best_feature]
+    my_tree = {best_feature_label:{}}
+    del(labels[best_feature])
+    feat_values = [example[best_feature] for example in data_set]
+    unique_vals = set(feat_values)
+    for value in unique_vals:
+        sub_labels = labels[:]
+        my_tree[best_feature_label][value] = create_tree(spit_data_set(data_set, best_feature, value), sub_labels)
+    return my_tree
+
+my_data, labels = create_data_set()
+my_tree = create_tree(my_data, labels)
+print my_tree
